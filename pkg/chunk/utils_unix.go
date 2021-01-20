@@ -31,12 +31,21 @@ func getNlink(fi os.FileInfo) int {
 
 func getDiskUsage(path string) (uint64, uint64, uint64, uint64) {
 	var stat syscall.Statfs_t
-	if err := syscall.Statfs(path, &stat); err == nil {
+	var err error
+	if err = syscall.Statfs(path, &stat); err == nil {
 		return stat.Blocks * uint64(stat.Bsize), stat.Bavail * uint64(stat.Bsize), uint64(stat.Files), uint64(stat.Ffree)
-	} else {
-		logger.Warnf("statfs %s: %s", path, err)
-		return 1, 1, 1, 1
 	}
+	if os.IsNotExist(err) {
+		if err = os.MkdirAll(path, 0777); err != nil {
+			logger.Warnf("mkdir %s: %s", path, err)
+		} else {
+			if err = syscall.Statfs(path, &stat); err == nil {
+				return stat.Blocks * uint64(stat.Bsize), stat.Bavail * uint64(stat.Bsize), uint64(stat.Files), uint64(stat.Ffree)
+			}
+		}
+	}
+	logger.Warnf("statfs %s: %s", path, err)
+	return 1, 1, 1, 1
 }
 
 func changeMode(dir string, st os.FileInfo, mode os.FileMode) {

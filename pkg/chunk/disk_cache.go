@@ -77,8 +77,11 @@ func newCacheStore(dir string, cacheSize int64, limit, pendingPages int, config 
 	}
 	c.createDir(c.dir)
 	br, fr := c.curFreeRatio()
-	if br < c.freeRatio || fr < c.freeRatio {
-		logger.Warnf("not enough space (%d%%) or inodes (%d%%) for caching: free ratio should be >= %d%%", int(br*100), int(fr*100), int(c.freeRatio*100))
+	if br < c.freeRatio {
+		logger.Warnf("not enough space (%d%%) for caching: free ratio should be >= %d%%", int(br*100), int(c.freeRatio*100))
+	}
+	if fr < c.freeRatio {
+		logger.Warnf("not enough free inodes (%d%%) for caching: free ratio should be >= %d%%", int(fr*100), int(c.freeRatio*100))
 	}
 	go c.flush()
 	go c.checkFreeSpace()
